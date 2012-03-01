@@ -68,4 +68,7 @@ body {
 	border:1px solid #4C964D;
 	color:#FFF;
 }
-	
+.index-page-posts li {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
