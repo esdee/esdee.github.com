@@ -1,0 +1,102 @@
+<p><a href='http://www.linkedin.com/'>LinkedIn</a> published a post on their engineering blog - <a href='http://engineering.linkedin.com/frontend/client-side-templating-throwdown-mustache-handlebars-dustjs-and-more'>The client-side templating throwdown: mustache, handlebars, dust.js, and more</a> explaining how they assessed 18 javascript templating libaries for generating LinkedIn profiles.</p>
+
+<p>LinkedIn discusses the requirements they had, the criteria they used in their assessments and the pros and cons of each library they assesssed - its a great read and well worth the time.</p>
+
+<p>The requirement that I found most interesting was <strong>write-once</strong> - they wanted the same template to be rendered on both the client and server sides. Server side html generation was required for SEO. I thought I would give the throwdown a try using clojure and clojurescript.</p>
+
+<h3 id='the_profile_data'>The profile data</h3>
+
+<p>LinkedIn provided the data for one <a href='https://gist.github.com/4d90dd839145055e9bf6#file_profile.json'>profile</a> and the expected <a href='https://gist.github.com/4d90dd839145055e9bf6#file_profile.html'>html</a>. I use <a href='https://github.com/dakrone/cheshire'>cheshire</a> to parse the json to clojure.</p>
+
+<h3 id='the_template_file'>The template file</h3>
+
+<p>The template file consists of a number of macros that expand into clojure vectors e.g. <div>
+  <pre><code class='clojure'>(defmacro organization-details
+  [position]
+  `(let [company# (:company ~position)]
+     [:p {:class &quot;orgstats organization-details&quot;}
+      (str (:type company#) &quot;; &quot; (:industry company#) &quot; Industry&quot;)]))</code></pre>
+</div></p>
+
+<p><em>src/clj/linked_in/app/view_macros/profile.cljs</em></p>
+
+<p>expands into <div>
+  <pre><code class='html'>&lt;:p class=&quot;orgstats organization-details&quot; &quot;Publicly Held Internet Industry&quot;&gt;</code></pre>
+</div></p>
+
+<p>when called with <div>
+  <pre><code class='clojure'>{:type &quot;Publicly Held;&quot; :industry &quot;Internet&quot;}</code></pre>
+</div></p>
+
+<p>There is an entry point function <em>template</em> that when called with a profile returns the template <div>
+  <pre><code class='clojure'>`(defmacro template
+  [profile]
+  `[:div.content
+    (profile-header ~profile)
+    (profile-summary ~profile)
+    (profile-skills ~profile)
+    (profile-experience ~profile)])</code></pre>
+</div></p>
+
+<h3 id='why_macros_'>Why macros ?</h3>
+
+<p>Why are is all the vector returning code in the template file macros instead of functions? This was my plan originally - template would be the sole macro everything else would be functions.</p>
+
+<p>But I found that clojurescript did not expand the functions name as I expected unless they were all either defined solely within the template macro or macros rather than functions.</p>
+
+<h3 id='generating_html_on_the_client_side'>Generating html on the client side</h3>
+
+<p>I use <a href='https://github.com/ibdknox/crate'>crate</a> to generate html, <a href='https://github.com/levand/domina'>domina</a> to manipulate the dom, <a href='https://github.com/brentonashworth/one/blob/master/src/lib/cljs/one/browser/remote.cljs'>remote</a> from <a href='https://github.com/brentonashworth/one'>One</a> to get data from the server.</p>
+<div>
+  <pre><code class='clojure'>(ns linked-in.core
+  (:use [crate.core :only (html)]
+        [domina :only (swap-content!)]
+        [domina.xpath :only (xpath)])
+  (:require [cljs.reader :as reader]
+            [one.browser.remote :as remote])
+  (:require-macros [linked-in.app.view-macros.profile :as profile]))
+
+; This is where the profile will be displayed
+(def content-node (xpath &quot;//div[@class='content']&quot;))
+
+(defn show-profile
+  [profile]
+  (-&gt;&gt; profile
+    profile/template
+    html
+    (swap-content! content-node)))
+
+; Retrieve the clojure map from the server and display it
+(defn ^:export start
+  []
+  (remote/request
+    100
+    &quot;profiles/client/100&quot;
+    :on-success #(-&gt;&gt; % :body reader/read-string show-profile)
+    :on-error #(-&gt;&gt; % :status (str &quot;*ERROR* &quot;) js/alert)))</code></pre>
+</div>
+<h3 id='generating_html_on_the_server_side'>Generating html on the server side</h3>
+
+<p>I use <a href='https://github.com/weavejester/hiccup'>hiccup</a> to generate html, <a href='https://github.com/cgrand/moustache'>moustache</a> for routing, and the html is returned as the body of a <a href='https://github.com/mmcgrana/ring'>ring</a> response.</p>
+
+<p>The function that does the work looks like this. <div>
+  <pre><code class='clojure'>(defn- profile
+  [_ id]
+  (-&gt;
+   (get-profile id)
+   profile/template html
+   response))</code></pre>
+</div></p>
+
+<h3 id='gotchas'>Gotchas</h3>
+
+<p>Crate creates nodes by the following function <div>
+  <pre><code class='clojure'>(defn create-elem [nsp tag]
+  (. js/document (createElementNS nsp tag)))</code></pre>
+</div></p>
+
+<p>On of the LinkedIn requirements was to replace <code>\n</code> with <code>&lt;br/&gt;</code> in a text portion of the profile. A simple string replace would not work here because it would be escaped by <code>createElementNS</code>. I split the text based on the <code>\n</code> character and return a vec of <code>[&quot;text&quot; [:br] ...]</code> to deal with this.</p>
+
+<h3 id='conclusions'>Conclusions</h3>
+
+<p>I think that the clojurescript solution addresses a lot of the issues raised in the throwdown and avoids many of the cons listed for the other solutions in the LinkedIn post. It was great being able to use clojure on the client and server. In addition, beimg able to develop the client side using the browser based repl (no page refreshes!) was fun - hopefully the subject of another post.</p>
