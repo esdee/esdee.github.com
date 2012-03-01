@@ -18,6 +18,33 @@ The requirement that I found most interesting was **write-once** - they wanted t
 LinkedIn provided the data for one [profile ](https://gist.github.com/4d90dd839145055e9bf6#file_profile.json) and the expected [html](https://gist.github.com/4d90dd839145055e9bf6#file_profile.html).
 I use [cheshire](https://github.com/dakrone/cheshire) to parse the json to clojure.
 
+#### Usage
+My code is [here](https://github.com/esdee/linked-in)
+
+{% highlight bash %}
+git clone git@github.com:esdee/linked-in.git
+
+cd linked-in
+
+lein deps
+
+lein cljsbuild clean
+
+lein cljsbuild once
+
+lein repl
+
+(run-server)
+{% endhighlight %}
+
+**client-side templating**
+
+http://localhost:8080
+
+**server-side templating**
+
+http://localhost:8080/profiles/100
+
 ### The template file
 The template file consists of a number of macros that expand into clojure vectors e.g.
 {% highlight clojure %}
