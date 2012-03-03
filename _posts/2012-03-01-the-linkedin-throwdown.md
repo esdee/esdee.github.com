@@ -139,4 +139,5 @@ On of the LinkedIn requirements was to replace `\n`  with  `<br/>` in a text por
 A simple string replace would not work here because it would be escaped by `createElementNS`. I split the text based on the `\n` character and return a vec of `["text" [:br] ...]` to deal with this.
 
 ### Conclusions
-I think that the clojurescript solution addresses a lot of the issues raised in the throwdown and avoids many of the cons listed for the other solutions in the LinkedIn post. It was great being able to use clojure on the client and server. In addition, beimg able to develop the client side using the browser based repl (no page refreshes!) was fun - hopefully the subject of another post.
+I think that the clojurescript solution addresses a lot of the issues raised in the throwdown and avoids many of the cons listed for the other solutions in the LinkedIn post. It was great being able to use clojure on the client and server.
+In addition, being able to develop the client side using the browser based repl (no page refreshes!) made me very productive - hopefully the subject of another post.
