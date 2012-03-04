@@ -2,6 +2,7 @@
 layout: post
 title: "The LinkedIn throwdown"
 category: project
+excerpt: LinkedIn assessed 18 javascript templates for generating LinkedIn profiles. I used clojurescript - here is my take on it.
 tags: [clojure, clojurescript]
 ---
 
